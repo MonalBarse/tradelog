@@ -7,23 +7,31 @@ import (
 	"github.com/MonalBarse/tradelog/internal/domain"
 	"github.com/MonalBarse/tradelog/internal/repository"
 	"github.com/MonalBarse/tradelog/pkg/utils"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthService interface {
 	Register(ctx context.Context, email, password string) error
 	Login(ctx context.Context, email, password string) (string, string, error)
+	Refresh(ctx context.Context, refreshToken string) (string, string, error)
 }
 
 type authService struct {
-	repo repository.UserRepository
+	repo          repository.UserRepository
+	jwtSecret     string
+	refreshSecret string
 }
 
-func NewAuthService(repo repository.UserRepository) AuthService {
-	return &authService{repo}
+func NewAuthService(repo repository.UserRepository, jwtSecret, refreshSecret string) AuthService {
+	return &authService{
+		repo:          repo,
+		jwtSecret:     jwtSecret,
+		refreshSecret: refreshSecret,
+	}
 }
 
-// @desc: reg new user
-// @flow: check existing -> hash pwd -> create user
+// @desc: register new user
+// @flow: check existing user -> hash password -> create user record
 func (s *authService) Register(ctx context.Context, email, password string) error {
 	existingUser, _ := s.repo.FindByEmail(ctx, email)
 	if existingUser != nil {
@@ -38,14 +46,14 @@ func (s *authService) Register(ctx context.Context, email, password string) erro
 	user := &domain.User{
 		Email:    email,
 		Password: hashedPassword,
-		Role:     "user", // default-> user
+		Role:     "user",
 	}
 
 	return s.repo.Create(ctx, user)
 }
 
 // @desc: login user
-// @flow: verify email -> check password -> generate tokens
+//@flow: find user by email -> verify password -> generate tokens
 func (s *authService) Login(ctx context.Context, email, password string) (string, string, error) {
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
@@ -56,11 +64,26 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 		return "", "", errors.New("invalid credentials")
 	}
 
-	// Generate both tokens
-	accessToken, refreshToken, err := utils.GenerateTokens(user.ID, user.Role)
-	if err != nil {
-		return "", "", err
+	return utils.GenerateTokens(user.ID, user.Role, s.jwtSecret, s.refreshSecret)
+}
+
+// @desc: refresh tokens
+// @flow: validate refresh token -> generate new tokens
+func (s *authService) Refresh(ctx context.Context, refreshTokenString string) (string, string, error) {
+	token, err := utils.ValidateRefreshToken(refreshTokenString, s.refreshSecret)
+	if err != nil || !token.Valid {
+		return "", "", errors.New("invalid refresh token")
 	}
 
-	return accessToken, refreshToken, nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", "", errors.New("invalid token claims")
+	}
+
+	userID := uint(claims["sub"].(float64))
+
+	// In a real app, I might query DB here to check user status using userID
+	// user, err := s.repo.FindByID(ctx, userID) ...
+
+	return utils.GenerateTokens(userID, "user", s.jwtSecret, s.refreshSecret)
 }

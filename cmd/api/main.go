@@ -39,24 +39,25 @@ func main() {
 		color.Yellow("No .env file found")
 	}
 	config.LoadConfig()
-
 	config.ConnectDB()
 
-	// @use : Access repo layer to interact with DB
 	userRepo := repository.NewUserRepository(config.DB)
 	tradeRepo := repository.NewTradeRepository(config.DB)
 
-	// @use: Access service layer to use logic (for now auth only)
-	authService := service.NewAuthService(userRepo)
+	// PASS SECRETS HERE
+	authService := service.NewAuthService(
+		userRepo,
+		config.AppConfig.JWTSecret,
+		config.AppConfig.JWTRefreshSecret,
+	)
 	tradeService := service.NewTradeService(tradeRepo)
 
-	// @use: Access transport layer to handle HTTP requests
 	authHandler := transport.NewAuthHandler(authService)
 	tradeHandler := transport.NewTradeHandler(tradeService)
 
-	r := gin.Default() // here i am creating a gin router with default middleware (logger and recovery)
+	r := gin.Default()
 
-	api := r.Group("/api/v1") // I'll version it so if -> breaking changes -> can create new version
+	api := r.Group("/api/v1")
 	{
 		auth := api.Group("/auth")
 		{
@@ -66,9 +67,9 @@ func main() {
 			auth.POST("/refresh", authHandler.Refresh)
 		}
 
-		// these are protected routes: only accessible with valid JWT
 		protected := api.Group("/")
-		protected.Use(middleware.AuthMiddleware())
+		// PASS SECRET HERE
+		protected.Use(middleware.AuthMiddleware(config.AppConfig.JWTSecret))
 		{
 			protected.POST("/trades", tradeHandler.CreateTrade)
 			protected.GET("/trades", tradeHandler.ListTrades)

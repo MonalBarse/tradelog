@@ -4,9 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MonalBarse/tradelog/internal/service"
-	"github.com/MonalBarse/tradelog/pkg/utils"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthHandler struct {
@@ -46,7 +44,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	err := h.service.Register(c.Request.Context(),req.Email, req.Password)
+	err := h.service.Register(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -74,7 +72,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := h.service.Login( c.Request.Context(),req.Email, req.Password)
+	accessToken, refreshToken, err := h.service.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
@@ -105,24 +103,10 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.ValidateRefreshToken(refreshTokenString)
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
-		return
-	}
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
-		return
-	}
-
-	userID := uint(claims["sub"].(float64))
-
-	// In a real app, we might fetch the user role from DB here to ensure they aren't banned.
-	// For now, we assume "user" or store role in refresh token too.
-	newAccessToken, newRefreshToken, err := utils.GenerateTokens(userID, "user")
+	// Call service to handle refresh logic
+	newAccessToken, newRefreshToken, err := h.service.Refresh(c.Request.Context(), refreshTokenString)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate tokens"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 

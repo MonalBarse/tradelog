@@ -9,12 +9,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// @desc : auth-middleware -> checks for valid jwt in auth header
-// @flow : get auth header -> parse token -> validate -> extract claims -> inject into context
-func AuthMiddleware() gin.HandlerFunc {
+// @desc: JWT Authentication Middleware
+// @workig: extracts token from Authorization header, validates it, and sets user info in context
+// @flow: get token from header -> validate token -> extract claims -> set context
+func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		// get auth header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
@@ -29,22 +29,18 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		// validate token
-		token, err := utils.ValidateAccessToken(tokenString)
+		token, err := utils.ValidateAccessToken(tokenString, jwtSecret)
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
 
-		// extract the payload
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
 			return
 		}
 
-		// inject into gin context to use later in handlers
-		// (We can retrieve this later in the handlers using c.Get("userID"))
 		c.Set("userID", uint(claims["sub"].(float64)))
 		c.Set("role", claims["role"])
 
