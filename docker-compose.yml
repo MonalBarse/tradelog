@@ -24,17 +24,19 @@ services:
     restart: always
     ports:
       - "8080:8080"
-    environment:
-      - ENV=dev
-      - PORT=8080
-      # Connect to the 'postgres' service defined above
-      - DB_URL=postgres://admin:secret@localhost:5432/tradelog?sslmode=disable
-      - JWT_SECRET=this_is_my_secret_key_for_the_assignment
-      - JWT_REFRESH_SECRET=this_is_my_refresh_secret_key_for_the_assignment
-      - JWT_EXPIRATION_HOURS=1
-      - ADMIN_SECRET=make_me_an_admin_please
+    # environment:
+    #   - ENV=dev
+    #   - PORT=8080
+    #   # Connect to the 'postgres' service defined above
+    #   - DB_URL=postgres://admin:secret@localhost:5432/tradelog?sslmode=disable
+    #   - JWT_SECRET=this_is_my_secret_key_for_the_assignment
+    #   - JWT_REFRESH_SECRET=this_is_my_refresh_secret_key_for_the_assignment
+    #   - JWT_EXPIRATION_HOURS=1
+    #   - ADMIN_SECRET=make_me_an_admin_please
     depends_on:
       - postgres
+    env_file:
+      - .env
 
   # 3. The Frontend (Next.js)
   web:
