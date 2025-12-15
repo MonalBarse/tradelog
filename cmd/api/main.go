@@ -38,6 +38,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		color.Yellow("No .env file found")
 	}
+	config.LoadConfig()
 
 	config.ConnectDB()
 

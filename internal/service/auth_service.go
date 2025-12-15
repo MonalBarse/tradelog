@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/MonalBarse/tradelog/internal/domain"
@@ -9,8 +10,8 @@ import (
 )
 
 type AuthService interface {
-	Register(email, password string) error
-	Login(email, password string) (string, string, error)
+	Register(ctx context.Context, email, password string) error
+	Login(ctx context.Context, email, password string) (string, string, error)
 }
 
 type authService struct {
@@ -22,10 +23,9 @@ func NewAuthService(repo repository.UserRepository) AuthService {
 }
 
 // @desc: reg new user
-// @flow : check if user exists -> if not, hash pswrd -> create user
-func (s *authService) Register(email, password string) error {
-
-	existingUser, _ := s.repo.FindByEmail(email)
+// @flow: check existing -> hash pwd -> create user
+func (s *authService) Register(ctx context.Context, email, password string) error {
+	existingUser, _ := s.repo.FindByEmail(ctx, email)
 	if existingUser != nil {
 		return errors.New("user already exists")
 	}
@@ -38,16 +38,16 @@ func (s *authService) Register(email, password string) error {
 	user := &domain.User{
 		Email:    email,
 		Password: hashedPassword,
-		Role:     "user", //default-> user
+		Role:     "user", // default-> user
 	}
 
-	return s.repo.Create(user)
+	return s.repo.Create(ctx, user)
 }
 
 // @desc: login user
-// @flow: find user by email -> check pswrd -> generate jwt
-func (s *authService) Login(email, password string) (string, string, error) {
-	user, err := s.repo.FindByEmail(email)
+// @flow: verify email -> check password -> generate tokens
+func (s *authService) Login(ctx context.Context, email, password string) (string, string, error) {
+	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
 		return "", "", errors.New("invalid credentials")
 	}

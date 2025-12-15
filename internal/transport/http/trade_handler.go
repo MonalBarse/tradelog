@@ -5,6 +5,7 @@ import (
 
 	"github.com/MonalBarse/tradelog/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -23,10 +24,10 @@ func NewTradeHandler(service service.TradeService) *TradeHandler {
 }
 
 type createTradeRequest struct {
-	Symbol   string  `json:"symbol" binding:"required"`
-	Type     string  `json:"type" binding:"required,oneof=BUY SELL"` // restrict to BUY or SELL
-	Price    float64 `json:"price" binding:"required,gt=0"`
-	Quantity float64 `json:"quantity" binding:"required,gt=0"`
+	Symbol   string          `json:"symbol" binding:"required"`
+	Type     string          `json:"type" binding:"required,oneof=BUY SELL"` // restrict to BUY or SELL
+	Price    decimal.Decimal `json:"price" binding:"required"`
+	Quantity decimal.Decimal `json:"quantity" binding:"required"`
 }
 
 // Swagger Annotations
@@ -55,7 +56,7 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 	}
 
 	// actualy create trade
-	err := h.service.CreateTrade(userID.(uint), req.Symbol, req.Type, req.Price, req.Quantity)
+	err := h.service.CreateTrade(c.Request.Context(), userID.(uint), req.Symbol, req.Type, req.Price, req.Quantity)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -75,7 +76,7 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 func (h *TradeHandler) ListTrades(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
-	trades, err := h.service.GetUserTrades(userID.(uint))
+	trades, err := h.service.GetUserTrades(c.Request.Context(), userID.(uint))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch trades"})
 		return
@@ -99,7 +100,7 @@ func (h *TradeHandler) GetAllTrades(c *gin.Context) {
 		return
 	}
 
-	trades, err := h.service.GetAllTrades()
+	trades, err := h.service.GetAllTrades(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch all trades"})
 		return
@@ -118,7 +119,7 @@ func (h *TradeHandler) GetAllTrades(c *gin.Context) {
 func (h *TradeHandler) GetPortfolio(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
-	portfolio, err := h.service.GetPortfolio(userID.(uint))
+	portfolio, err := h.service.GetPortfolio(c.Request.Context(), userID.(uint))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to calculate portfolio"})
 		return

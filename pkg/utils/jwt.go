@@ -2,13 +2,12 @@ package utils
 
 import (
 	"errors"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateTokens(userID uint, role string) (string, string, error) {
+func GenerateTokens(userID uint, role string, jwtSecret, refreshSecret string) (string, string, error) {
 	// crt access token
 	accessClaims := jwt.MapClaims{
 		"sub":  userID,
@@ -18,7 +17,7 @@ func GenerateTokens(userID uint, role string) (string, string, error) {
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	accessTokenString, err := accessToken.SignedString([]byte(jwtSecret))
 	if err != nil {
 		return "", "", err
 	}
@@ -30,28 +29,28 @@ func GenerateTokens(userID uint, role string) (string, string, error) {
 		"iat": time.Now().Unix(),
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("JWT_REFRESH_SECRET")))
+	// refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("JWT_REFRESH_SECRET")))
+	refreshTokenString, err := refreshToken.SignedString([]byte(refreshSecret))
 	if err != nil {
 		return "", "", err
 	}
 	return accessTokenString, refreshTokenString, nil
 }
 
-func ValidateAccessToken(tokenString string) (*jwt.Token, error) {
+func ValidateAccessToken(tokenString, secret string) (*jwt.Token, error) {
 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return []byte(os.Getenv("JWT_SECRET")), nil
+		return []byte(secret), nil
 	})
 }
 
-func ValidateRefreshToken(tokenString string) (*jwt.Token, error) {
+func ValidateRefreshToken(tokenString string, refreshSecred string) (*jwt.Token, error) {
 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		// HERE is the fix: Use the Refresh Secret!
-		return []byte(os.Getenv("JWT_REFRESH_SECRET")), nil
+		return []byte(refreshSecred), nil
 	})
 }
