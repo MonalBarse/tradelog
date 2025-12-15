@@ -70,24 +70,27 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	accessToken, refreshToken, err := h.service.Login(c.Request.Context(), req.Email, req.Password)
+	// Capture the user object
+	user, accessToken, refreshToken, err := h.service.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	// SET HTTP-ONLY COOKIE
-	// name, value, maxAge (seconds), path, domain, secure, httpOnly
-	c.SetCookie("refresh_token", refreshToken, 3600*24*7, "/", "", false, true) // Secure=false for localhost. Set true in prod.
+	c.SetCookie("refresh_token", refreshToken, 3600*24*7, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
+		"user": gin.H{
+			"id":    user.ID,
+			"email": user.Email,
+			"role":  user.Role,
+		},
 	})
 }
 

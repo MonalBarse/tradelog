@@ -11,10 +11,12 @@ import (
 	transport "github.com/MonalBarse/tradelog/internal/transport/http"
 	"github.com/MonalBarse/tradelog/internal/transport/middleware"
 	"github.com/fatih/color"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"time"
 )
 
 // @title TradeLog API
@@ -57,6 +59,19 @@ func main() {
 	tradeHandler := transport.NewTradeHandler(tradeService)
 
 	r := gin.Default()
+
+	// ------- CORS Configuration -------
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true, // allows cookies, of refresh token
+		AllowOriginFunc: func(origin string) bool {
+			return origin == "http://localhost:3000"
+		},
+		MaxAge: 12 * time.Hour,
+	}))
 
 	api := r.Group("/api/v1")
 	{

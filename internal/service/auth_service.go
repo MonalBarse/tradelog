@@ -12,7 +12,7 @@ import (
 
 type AuthService interface {
 	Register(ctx context.Context, email, password string) error
-	Login(ctx context.Context, email, password string) (string, string, error)
+	Login(ctx context.Context, email, password string) (*domain.User, string, string, error)
 	Refresh(ctx context.Context, refreshToken string) (string, string, error)
 	PromoteToAdmin(ctx context.Context, userID uint, secret string) error
 }
@@ -57,17 +57,22 @@ func (s *authService) Register(ctx context.Context, email, password string) erro
 
 // @desc: login user
 // @flow: find user by email -> verify password -> generate tokens
-func (s *authService) Login(ctx context.Context, email, password string) (string, string, error) {
+func (s *authService) Login(ctx context.Context, email, password string) (*domain.User, string, string, error) {
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", "", errors.New("invalid credentials")
+		return nil, "", "", errors.New("invalid credentials")
 	}
 
 	if !utils.CheckPasswordHash(password, user.Password) {
-		return "", "", errors.New("invalid credentials")
+		return nil, "", "", errors.New("invalid credentials")
 	}
 
-	return utils.GenerateTokens(user.ID, user.Role, s.jwtSecret, s.refreshSecret)
+	accessToken, refreshToken, err := utils.GenerateTokens(user.ID, user.Role, s.jwtSecret, s.refreshSecret)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	return user, accessToken, refreshToken, nil
 }
 
 // @desc: refresh tokens
