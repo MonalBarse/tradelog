@@ -1,12 +1,23 @@
+# Base image
 FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
+# Copy source
 COPY . .
 
-# Build not required for dev, but good for prod.
-# For this assignment, we will run in dev mode to keep it simple/fast.
-CMD ["npm", "run", "dev"]
+# Build the app
+RUN npm run build
+
+# Expose port
+EXPOSE 3000
+
+# Start the app
+CMD ["npm", "start"]
