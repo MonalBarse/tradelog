@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # The Database
+  # 1. The Database
   postgres:
     image: postgres:16-alpine
     container_name: tradelog_db
@@ -15,11 +15,38 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # TODO: activate when client is ready
-  # web:
-  #   build: ./web
-  #   ports:
-  #     - "3000:3000"
+  # 2. The Backend API (Go)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tradelog_backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - ENV=dev
+      - PORT=8080
+      # Connect to the 'postgres' service defined above
+      - DB_URL=postgres://admin:secret@localhost:5432/tradelog?sslmode=disable
+      - JWT_SECRET=this_is_my_secret_key_for_the_assignment
+      - JWT_REFRESH_SECRET=this_is_my_refresh_secret_key_for_the_assignment
+      - JWT_EXPIRATION_HOURS=1
+      - ADMIN_SECRET=make_me_an_admin_please
+    depends_on:
+      - postgres
+
+  # 3. The Frontend (Next.js)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: tradelog_web
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

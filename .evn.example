@@ -1,0 +1,17 @@
+PORT=8080
+ENV=development
+
+# Database
+DB_HOST=localhost
+DB_USER=admin
+DB_PASSWORD=secret
+DB_NAME=tradelog
+DB_PORT=5432
+# or
+DB_URL=postgres://admin:secret@localhost:5432/tradelog?sslmode=disable
+
+# Auth
+JWT_SECRET=this_is_my_secret_key_for_the_assignment
+JWT_REFRESH_SECRET=this_is_my_refresh_secret_key_for_the_assignment
+JWT_EXPIRATION_HOURS=1
+ADMIN_SECRET=make_me_an_admin_please
