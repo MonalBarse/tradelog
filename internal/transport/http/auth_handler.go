@@ -4,7 +4,9 @@ import (
 	"net/http"
 
 	"github.com/MonalBarse/tradelog/internal/service"
+	"github.com/MonalBarse/tradelog/pkg/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthHandler struct {
@@ -48,7 +50,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 // @desc Authenticates user and returns JWT token
 // @req post /auth/login
-// @flow validate input -> call login user -> res with token
+// @flow validate input -> call login user -> set cookie + res
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 
@@ -57,13 +59,55 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.service.Login(req.Email, req.Password)
+	accessToken, refreshToken, err := h.service.Login(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
+	// SET HTTP-ONLY COOKIE
+	// name, value, maxAge (seconds), path, domain, secure, httpOnly
+	c.SetCookie("refresh_token", refreshToken, 3600*24*7, "/", "", false, true) // Secure=false for localhost. Set true in prod.
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"access_token": accessToken,
+	})
+}
+
+// @desc Refreshes JWT tokens using the refresh token cookie
+// @req  post /auth/refresh
+// @flow get cookie -> validate -> generate new tokens -> set cookie + res
+func (h *AuthHandler) Refresh(c *gin.Context) {
+	refreshTokenString, err := c.Cookie("refresh_token")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token required"})
+		return
+	}
+
+	token, err := utils.ValidateRefreshToken(refreshTokenString)
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
+		return
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+		return
+	}
+
+	userID := uint(claims["sub"].(float64))
+
+	// In a real app, we might fetch the user role from DB here to ensure they aren't banned.
+	// For now, we assume "user" or store role in refresh token too.
+	newAccessToken, newRefreshToken, err := utils.GenerateTokens(userID, "user")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate tokens"})
+		return
+	}
+
+	c.SetCookie("refresh_token", newRefreshToken, 3600*24*7, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token": newAccessToken,
 	})
 }

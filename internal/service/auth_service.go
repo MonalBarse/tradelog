@@ -10,7 +10,7 @@ import (
 
 type AuthService interface {
 	Register(email, password string) error
-	Login(email, password string) (string, error)
+	Login(email, password string) (string, string, error)
 }
 
 type authService struct {
@@ -46,20 +46,21 @@ func (s *authService) Register(email, password string) error {
 
 // @desc: login user
 // @flow: find user by email -> check pswrd -> generate jwt
-func (s *authService) Login(email, password string) (string, error) {
+func (s *authService) Login(email, password string) (string, string, error) {
 	user, err := s.repo.FindByEmail(email)
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		return "", "", errors.New("invalid credentials")
 	}
-	// if no err -> user found move ahead
+
 	if !utils.CheckPasswordHash(password, user.Password) {
-		return "", errors.New("invalid credentials")
+		return "", "", errors.New("invalid credentials")
 	}
 
-	token, err := utils.GenerateToken(user.ID, user.Role)
+	// Generate both tokens
+	accessToken, refreshToken, err := utils.GenerateTokens(user.ID, user.Role)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return token, nil
+	return accessToken, refreshToken, nil
 }
