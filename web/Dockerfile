@@ -1,7 +1,6 @@
-# Base image
-FROM node:18-alpine
+# Use Node 20 for Next.js 16 compatibility
+FROM node:20-alpine
 
-# Set working directory
 WORKDIR /app
 
 # Copy package files
@@ -10,7 +9,7 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy source
+# Copy source code
 COPY . .
 
 # Build the app

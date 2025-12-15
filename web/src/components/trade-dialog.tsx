@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-// 1. Define Options
 const TRADING_PAIRS = [
   { value: "BTC/USD", label: "Bitcoin (BTC/USD)" },
   { value: "ETH/USD", label: "Ethereum (ETH/USD)" },
@@ -43,27 +42,24 @@ const TRADING_PAIRS = [
   { value: "AAPL/USD", label: "Apple (AAPL/USD)" },
 ] as const
 
-// 2. Define Schema (Standard Zod)
 const tradeSchema = z.object({
   symbol: z.enum(["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "AAPL/USD"]),
   type: z.enum(["BUY", "SELL"]),
-  // Using coerce to handle string-to-number conversion from inputs
   price: z.coerce.number().positive({ message: "Price must be positive" }),
   quantity: z.coerce.number().positive({ message: "Quantity must be positive" }),
 })
 
-// 3. Infer Type
 type TradeFormValues = z.infer<typeof tradeSchema>
 
 export function TradeDialog({ onSuccess }: { onSuccess: () => void }) {
   const [open, setOpen] = useState(false)
 
-  // 4. Initialize Form with Strict Type
-  const form = useForm<TradeFormValues>({
+  // No generic type passed to useForm to prevent Resolver conflicts
+  const form = useForm({
     resolver: zodResolver(tradeSchema),
     defaultValues: {
-      symbol: "BTC/USD", // Matches the Enum
-      type: "BUY",       // Matches the Enum
+      symbol: "BTC/USD",
+      type: "BUY",
       price: 0,
       quantity: 0,
     },
@@ -104,8 +100,6 @@ export function TradeDialog({ onSuccess }: { onSuccess: () => void }) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
 
             <div className="grid grid-cols-1 gap-4">
-
-              {/* Symbol Select */}
               <FormField
                 control={form.control}
                 name="symbol"
@@ -131,7 +125,6 @@ export function TradeDialog({ onSuccess }: { onSuccess: () => void }) {
                 )}
               />
 
-              {/* Action Buttons */}
               <FormField
                 control={form.control}
                 name="type"
@@ -174,7 +167,13 @@ export function TradeDialog({ onSuccess }: { onSuccess: () => void }) {
                   <FormItem>
                     <FormLabel>Price ($)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      {/* FIXED: Added explicit cast to 'any' to satisfy strict Typescript build */}
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        value={field.value as any}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -188,7 +187,12 @@ export function TradeDialog({ onSuccess }: { onSuccess: () => void }) {
                   <FormItem>
                     <FormLabel>Quantity</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.000001" {...field} />
+                      <Input
+                        type="number"
+                        step="0.000001"
+                        {...field}
+                        value={field.value as any}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
