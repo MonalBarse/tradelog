@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # The Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradelog_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: ${DB_NAME:-tradelog}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # TODO: activate when client is ready
+  # web:
+  #   build: ./web
+  #   ports:
+  #     - "3000:3000"
+
+volumes:
+  postgres_data:
