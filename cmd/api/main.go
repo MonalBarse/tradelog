@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/MonalBarse/tradelog/docs"
 	"github.com/MonalBarse/tradelog/internal/config"
 	"github.com/MonalBarse/tradelog/internal/repository"
 	"github.com/MonalBarse/tradelog/internal/service"
@@ -12,7 +13,26 @@ import (
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title TradeLog API
+// @version 1.0
+// @description This is a sample trading application backend.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.email support@tradelog.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -41,6 +61,7 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/logout", authHandler.Logout)
 			auth.POST("/refresh", authHandler.Refresh)
 		}
 
@@ -50,9 +71,14 @@ func main() {
 		{
 			protected.POST("/trades", tradeHandler.CreateTrade)
 			protected.GET("/trades", tradeHandler.ListTrades)
-			protected.GET("/admin/trades", tradeHandler.GetAllTrades) // amin check is inside handler
+			protected.GET("/portfolio", tradeHandler.GetPortfolio)
+			protected.GET("/admin/trades", tradeHandler.GetAllTrades)
 		}
 	}
+
+	// Swagger
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{

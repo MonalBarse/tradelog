@@ -111,3 +111,13 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		"access_token": newAccessToken,
 	})
 }
+
+// @desc Logs out the user by clearing the refresh token cookie
+// @req  post /auth/logout
+// @flow overwrite cookie with expired one -> res
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// name, value, maxAge (-1 means delete), path, domain, secure, httpOnly
+	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}

@@ -1,0 +1,127 @@
+basePath: /api/v1
+definitions:
+  http.createTradeRequest:
+    properties:
+      price:
+        type: number
+      quantity:
+        type: number
+      symbol:
+        type: string
+      type:
+        description: restrict to BUY or SELL
+        enum:
+        - BUY
+        - SELL
+        type: string
+    required:
+    - price
+    - quantity
+    - symbol
+    - type
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@tradelog.com
+    name: API Support
+  description: This is a sample trading application backend.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: TradeLog API
+  version: "1.0"
+paths:
+  /portfolio:
+    get:
+      description: Get current holdings calculated from trade history
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Portfolio
+      tags:
+      - trades
+  /trades:
+    get:
+      description: Get all trades for the logged-in user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List user trades
+      tags:
+      - trades
+    post:
+      consumes:
+      - application/json
+      description: Records a buy or sell order. Validates sufficient funds for SELL
+        orders.
+      parameters:
+      - description: Trade Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.createTradeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new trade
+      tags:
+      - trades
+  /trades/all:
+    get:
+      description: Get all trades across all users (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get All Trades (Admin Only)
+      tags:
+      - trades
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

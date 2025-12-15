@@ -29,9 +29,17 @@ type createTradeRequest struct {
 	Quantity float64 `json:"quantity" binding:"required,gt=0"`
 }
 
-// @desc - create a new trade for logged-in user
-// @req  - POST /trades
-// @flow - bind json -> get userID from context -> call service -> res
+// Swagger Annotations
+// @Summary Create a new trade
+// @Description Records a buy or sell order. Validates sufficient funds for SELL orders.
+// @Tags trades
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body createTradeRequest true "Trade Details"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /trades [post]
 func (h *TradeHandler) CreateTrade(c *gin.Context) {
 	var req createTradeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,16 +57,21 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 	// actualy create trade
 	err := h.service.CreateTrade(userID.(uint), req.Symbol, req.Type, req.Price, req.Quantity)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create trade"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Trade logged successfully"})
 }
 
-// @desc - list trades for logged-in user
-// @req  - get /trades
-// @flow - get userID from context -> call service -> res
+// Swagger Annotations
+// @Summary List user trades
+// @Description Get all trades for the logged-in user
+// @Tags trades
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /trades [get]
 func (h *TradeHandler) ListTrades(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
@@ -71,9 +84,14 @@ func (h *TradeHandler) ListTrades(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": trades})
 }
 
-// @desc - admin: get all trades
-// @req  - get /admin/trades
-// @flow - check role from context -> call service -> res
+// @Summary Get All Trades (Admin Only)
+// @Description Get all trades across all users (admin only)
+// @Tags trades
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]string
+// @Router /trades/all [get]
 func (h *TradeHandler) GetAllTrades(c *gin.Context) {
 	role, _ := c.Get("role")
 	if role != "admin" {
@@ -88,4 +106,23 @@ func (h *TradeHandler) GetAllTrades(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": trades})
+}
+
+// @Summary Get Portfolio
+// @Description Get current holdings calculated from trade history
+// @Tags trades
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /portfolio [get]
+func (h *TradeHandler) GetPortfolio(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	portfolio, err := h.service.GetPortfolio(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to calculate portfolio"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": portfolio})
 }
