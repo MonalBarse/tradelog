@@ -49,6 +49,7 @@ func main() {
 		userRepo,
 		config.AppConfig.JWTSecret,
 		config.AppConfig.JWTRefreshSecret,
+		config.AppConfig.AdminSecret,
 	)
 	tradeService := service.NewTradeService(tradeRepo)
 
@@ -75,6 +76,7 @@ func main() {
 			protected.GET("/trades", tradeHandler.ListTrades)
 			protected.GET("/portfolio", tradeHandler.GetPortfolio)
 			protected.GET("/admin/trades", tradeHandler.GetAllTrades)
+			protected.POST("/auth/promote", authHandler.Promote)
 		}
 	}
 

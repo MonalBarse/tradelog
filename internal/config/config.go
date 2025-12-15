@@ -13,6 +13,7 @@ type Config struct {
 	DBUrl            string `mapstructure:"DB_URL"`
 	JWTSecret        string `mapstructure:"JWT_SECRET"`
 	JWTRefreshSecret string `mapstructure:"JWT_REFRESH_SECRET"`
+	AdminSecret      string `mapstructure:"ADMIN_SECRET"`
 }
 
 var AppConfig *Config // Global accessible config

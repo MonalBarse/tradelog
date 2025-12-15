@@ -11,6 +11,10 @@ type AuthHandler struct {
 	service service.AuthService
 }
 
+type promoteRequest struct {
+	Secret string `json:"secret" binding:"required"`
+}
+
 func NewAuthHandler(service service.AuthService) *AuthHandler {
 	return &AuthHandler{service}
 }
@@ -129,4 +133,35 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
+// @Summary Promote user to Admin
+// @Description Promotes the current user to admin if the correct secret is provided
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body promoteRequest true "Admin Secret"
+// @Success 200 {object} map[string]string
+// @Router /auth/promote [post]
+func (h *AuthHandler) Promote(c *gin.Context) {
+	var req promoteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	err := h.service.PromoteToAdmin(c.Request.Context(), userID.(uint), req.Secret)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User promoted to admin successfully"})
 }

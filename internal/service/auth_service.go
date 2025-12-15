@@ -14,19 +14,22 @@ type AuthService interface {
 	Register(ctx context.Context, email, password string) error
 	Login(ctx context.Context, email, password string) (string, string, error)
 	Refresh(ctx context.Context, refreshToken string) (string, string, error)
+	PromoteToAdmin(ctx context.Context, userID uint, secret string) error
 }
 
 type authService struct {
 	repo          repository.UserRepository
 	jwtSecret     string
 	refreshSecret string
+	adminSecret   string
 }
 
-func NewAuthService(repo repository.UserRepository, jwtSecret, refreshSecret string) AuthService {
+func NewAuthService(repo repository.UserRepository, jwtSecret, refreshSecret, adminSecret string) AuthService {
 	return &authService{
 		repo:          repo,
 		jwtSecret:     jwtSecret,
 		refreshSecret: refreshSecret,
+		adminSecret:   adminSecret,
 	}
 }
 
@@ -53,7 +56,7 @@ func (s *authService) Register(ctx context.Context, email, password string) erro
 }
 
 // @desc: login user
-//@flow: find user by email -> verify password -> generate tokens
+// @flow: find user by email -> verify password -> generate tokens
 func (s *authService) Login(ctx context.Context, email, password string) (string, string, error) {
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
@@ -86,4 +89,18 @@ func (s *authService) Refresh(ctx context.Context, refreshTokenString string) (s
 	// user, err := s.repo.FindByID(ctx, userID) ...
 
 	return utils.GenerateTokens(userID, "user", s.jwtSecret, s.refreshSecret)
+}
+
+func (s *authService) PromoteToAdmin(ctx context.Context, userID uint, secret string) error {
+	if secret != s.adminSecret {
+		return errors.New("invalid admin secret")
+	}
+
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	user.Role = "admin"
+	return s.repo.Update(ctx, user)
 }
