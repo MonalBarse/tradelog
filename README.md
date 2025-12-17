@@ -7,6 +7,35 @@
 
 ---
 
+## Table of Contents
+
+1. [Quick Start for Evaluators](#quick-start-for-evaluators)
+2. [Assignment Requirements Fulfilled](#assignment-requirements-fulfilled)
+   - [Backend (Primary Focus)](#backend-primary-focus)
+   - [Basic Frontend (Supportive)](#basic-frontend-supportive)
+3. [Why Go (Golang)?](#why-go-golang)
+4. [Tech Stack & Architecture](#tech-stack--architecture)
+   - [Backend Stack](#backend-stack)
+   - [Frontend Stack](#frontend-stack)
+   - [DevOps](#devops)
+5. [Architecture Design](#architecture-design)
+   - [Clean Architecture (Backend)](#clean-architecture-backend)
+   - [Database Schema](#database-schema)
+6. [Security Implementation](#security-implementation)
+7. [Key Features & Business Logic](#key-features--business-logic)
+8. [API Documentation](#api-documentation)
+9. [Testing](#testing)
+10. [Scalability Considerations](#scalability-considerations)
+11. [Environment Configuration](#environment-configuration)
+12. [Deployment](#deployment)
+13. [Project Statistics](#project-statistics)
+14. [Learning Outcomes](#learning-outcomes)
+15. [About the Developer](#about-the-developer)
+16. [License](#license)
+17. [Acknowledgments](#acknowledgments)
+
+---
+
 ## Quick Start for Evaluators
 
 **No complex setup required. Just one command:**
